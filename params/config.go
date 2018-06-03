@@ -29,19 +29,22 @@ var (
 )
 
 var (
-	// MainnetChainConfig is the chain parameters to run a node on the main network.
-	MainnetChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(1),
-		HomesteadBlock:      big.NewInt(1150000),
-		DAOForkBlock:        big.NewInt(1920000),
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(2463000),
-		EIP150Hash:          common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-		EIP155Block:         big.NewInt(2675000),
-		EIP158Block:         big.NewInt(2675000),
-		ByzantiumBlock:      big.NewInt(4370000),
+	// AuxiliuMainnetChainConfig is the chain parameters to run a node on the main Auxilium network.
+	AuxiliumMainnetChainConfig = &ChainConfig{
+		ChainId:             big.NewInt(8),
+		HomesteadBlock:      big.NewInt(1),
+		DAOForkBlock:        nil,
+		DAOForkSupport:      false,
+		EIP150Block:         big.NewInt(2),
+		EIP150Hash:          common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		EIP155Block:         big.NewInt(3),
+		EIP158Block:         big.NewInt(3),
+		ByzantiumBlock:      big.NewInt(4),
 		ConstantinopleBlock: nil,
-		Ethash:              new(EthashConfig),
+		Ethash: &EthashConfig{
+			RewardsCharityAccount: common.HexToAddress("ba3cb563b492cd51ba1b2cecb2711e084d3babec"),
+			RewardsRDAccount:      common.HexToAddress("3f2d8744cdcc242259d71ab8c522a861468b2b71"),
+		},
 	}
 
 	// TestnetChainConfig contains the chain parameters to run a node on the Ropsten test network.
@@ -124,7 +127,10 @@ type ChainConfig struct {
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
-type EthashConfig struct{}
+type EthashConfig struct {
+	RewardsCharityAccount common.Address `json:"rewardsCharityAccount"`
+	RewardsRDAccount      common.Address `json:"rewardsRDAccount"`
+}
 
 // String implements the stringer interface, returning the consensus engine details.
 func (c *EthashConfig) String() string {

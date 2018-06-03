@@ -389,7 +389,7 @@ func doArchive(cmdline []string) {
 }
 
 func archiveBasename(arch string, env build.Environment) string {
-	platform := runtime.GOOS + "-" + arch
+	platform := arch
 	if arch == "arm" {
 		platform += os.Getenv("GOARM")
 	}
