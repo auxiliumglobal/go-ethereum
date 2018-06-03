@@ -42,8 +42,8 @@ var (
 		ByzantiumBlock:      big.NewInt(4),
 		ConstantinopleBlock: nil,
 		Ethash: &EthashConfig{
-			RewardsCharityAccount: common.HexToAddress("ba3cb563b492cd51ba1b2cecb2711e084d3babec"),
-			RewardsRDAccount:      common.HexToAddress("3f2d8744cdcc242259d71ab8c522a861468b2b71"),
+			RewardsCharityAccount: common.HexToAddress("155a3AdB2A0cC0a39798e1574F3788DFf970D053"),
+			RewardsRDAccount:      common.HexToAddress("1871df3633206D9e8821De7411bbee3061525708"),
 		},
 	}
 
