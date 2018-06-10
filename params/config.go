@@ -41,9 +41,9 @@ var (
 		EIP158Block:         big.NewInt(3),
 		ByzantiumBlock:      big.NewInt(4),
 		ConstantinopleBlock: nil,
-		Ethash: &EthashConfig{
-			RewardsCharityAccount: common.HexToAddress("155a3AdB2A0cC0a39798e1574F3788DFf970D053"),
-			RewardsRDAccount:      common.HexToAddress("1871df3633206D9e8821De7411bbee3061525708"),
+		Clique: &CliqueConfig{
+			Period: 10,
+			Epoch:  30000,
 		},
 	}
 
