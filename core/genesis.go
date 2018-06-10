@@ -297,14 +297,14 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 	return g.MustCommit(db)
 }
 
-// DefaultGenesisBlock returns the Ethereum main net genesis block.
+// DefaultGenesisBlock returns the Auxilium main net genesis block.
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.AuxiliumMainnetChainConfig,
-		Nonce:      0,
-		ExtraData:  hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		Timestamp:  1528629497,
+		ExtraData:  hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000000526703ea17ef7cdd4e74f7029dbb57c244b5879ddd71c5ee76a1d038facc660665a8ea4655d2e981fb5c9688b0aa01c042c5ba777865d86f6bb80d4e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		GasLimit:   4700000,
-		Difficulty: big.NewInt(524288),
+		Difficulty: big.NewInt(1),
 		Alloc:      decodePrealloc(auxiliumMainnetAllocData),
 	}
 }
