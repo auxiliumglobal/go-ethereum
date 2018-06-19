@@ -212,7 +212,7 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	case ghash == params.MainnetGenesisHash:
 		return params.AuxiliumMainnetChainConfig
 	case ghash == params.TestnetGenesisHash:
-		return params.TestnetChainConfig
+		return params.AuxiliumTestnetChainConfig
 	default:
 		return params.AllEthashProtocolChanges
 	}
@@ -302,22 +302,22 @@ func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.AuxiliumMainnetChainConfig,
 		Timestamp:  1528629497,
-		ExtraData:  hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000000526703ea17ef7cdd4e74f7029dbb57c244b5879ddd71c5ee76a1d038facc660665a8ea4655d2e981fb5c9688b0aa01c042c5ba777865d86f6bb80d4e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+		ExtraData:  hexutil.MustDecode("0x000000000000000000000000000000000000000000000000000000000000000072fda4129c0acbd95070b044748b2db206b6fe011664ab162c3efb614592b89c76f64cdb7f27395efc35a68d548d52f3502580f46ce1cb2adf7189530000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		GasLimit:   4700000,
 		Difficulty: big.NewInt(1),
 		Alloc:      decodePrealloc(auxiliumMainnetAllocData),
 	}
 }
 
-// DefaultTestnetGenesisBlock returns the Ropsten network genesis block.
+// DefaultTestnetGenesisBlock returns the Auxilium test net genesis block.
 func DefaultTestnetGenesisBlock() *Genesis {
 	return &Genesis{
-		Config:     params.TestnetChainConfig,
-		Nonce:      66,
-		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
-		GasLimit:   16777216,
-		Difficulty: big.NewInt(1048576),
-		Alloc:      decodePrealloc(testnetAllocData),
+		Config:     params.AuxiliumTestnetChainConfig,
+		Timestamp:  1528629497,
+		ExtraData:  hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000000526703ea17ef7cdd4e74f7029dbb57c244b5879ddd71c5ee76a1d038facc660665a8ea4655d2e981fb5c9688b0aa01c042c5ba777865d86f6bb80d4e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+		GasLimit:   4700000,
+		Difficulty: big.NewInt(1),
+		Alloc:      decodePrealloc(auxiliumTestnetAllocData),
 	}
 }
 

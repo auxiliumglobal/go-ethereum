@@ -18,14 +18,16 @@ package params
 
 // AuxiliumMainnetBootnodes are the enode URLs of the P2P bootstrap nodes running on
 // the main Auxilium network.
-var AuxiliumMainnetBootnodes = []string{
+var AuxiliumTestnetBootnodes = []string{
 	"enode://e8f4eed1bb6cb5f20c04653d526ae4ad4a6e375b1cb8521c1a2678726c34db6d9d7f4c3151cd5a7a7cb9ca67b40aebc245a5a4e54367ae0742cbe1255a63e70e@149.28.36.115:30308",
-	"enode://8a0ab923216f65e8499421c4a894c837abceb37cd61a432520b36a0280390a3620d62334e5afc9350c3d994d32634e28cc99715fdde53c0a9462a84c7cd969fb@207.246.122.81:30308",
 }
 
 // AuxiliumTestnetBootnodes are the enode URLs of the P2P bootstrap nodes running on the
 // Auxilium test network.
-var AuxiliumTestnetBootnodes = []string{}
+var AuxiliumMainnetBootnodes = []string{
+	"enode://d47d0f9bd08495d5dbb93d8f431027d662c4173c8bb64398299f0e990724fd6a1350090fb19e55e86f921ce4f01943b84a70dd9b8579d354621c6f4691da9b57@138.68.176.12:30308",
+	"enode://b20907893af614595ed72144ac2adb8933e4e6136cdececf36b969df4de991566d4e7c7b6d489c1dd573fc669028d0aafd7a9d9ad33d1031e8f5ee2f32b6ba97@8.12.22.12:30308",
+}
 
 // DiscoveryV5Bootnodes are the enode URLs of the P2P bootstrap nodes for the
 // experimental RLPx v5 topic-discovery network.

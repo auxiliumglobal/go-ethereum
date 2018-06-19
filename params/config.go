@@ -24,14 +24,14 @@ import (
 )
 
 var (
-	MainnetGenesisHash = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3") // Mainnet genesis hash to enforce below configs on
-	TestnetGenesisHash = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d") // Testnet genesis hash to enforce below configs on
+	MainnetGenesisHash = common.HexToHash("0xdf4d86977ccf68ecccaa3bbf17261e616977083323d445647d88fb4b3f1accec") // Mainnet genesis hash to enforce below configs on
+	TestnetGenesisHash = common.HexToHash("0xd7b0b707e5ca9173d7a1d5995ab9325ac5a9f15fbf9adf54058c85040b1a378b") // Testnet genesis hash to enforce below configs on
 )
 
 var (
-	// AuxiliuMainnetChainConfig is the chain parameters to run a node on the main Auxilium network.
-	AuxiliumMainnetChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(8),
+	// AuxiliuTestnetChainConfig is the chain parameters to run a node on the test Auxilium network.
+	AuxiliumTestnetChainConfig = &ChainConfig{
+		ChainId:             big.NewInt(88),
 		HomesteadBlock:      big.NewInt(1),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,
@@ -47,19 +47,22 @@ var (
 		},
 	}
 
-	// TestnetChainConfig contains the chain parameters to run a node on the Ropsten test network.
-	TestnetChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(3),
-		HomesteadBlock:      big.NewInt(0),
+	// AuxiliumMainnetChainConfig contains the chain parameters to run a node on the main Auxilium network.
+	AuxiliumMainnetChainConfig = &ChainConfig{
+		ChainId:             big.NewInt(8),
+		HomesteadBlock:      big.NewInt(1),
 		DAOForkBlock:        nil,
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"),
-		EIP155Block:         big.NewInt(10),
-		EIP158Block:         big.NewInt(10),
-		ByzantiumBlock:      big.NewInt(1700000),
+		DAOForkSupport:      false,
+		EIP150Block:         big.NewInt(2),
+		EIP150Hash:          common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		EIP155Block:         big.NewInt(3),
+		EIP158Block:         big.NewInt(3),
+		ByzantiumBlock:      big.NewInt(4),
 		ConstantinopleBlock: nil,
-		Ethash:              new(EthashConfig),
+		Clique: &CliqueConfig{
+			Period: 10,
+			Epoch:  30000,
+		},
 	}
 
 	// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
