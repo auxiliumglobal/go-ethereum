@@ -32,7 +32,7 @@ var (
 var (
 	// AuxiliuTestnetChainConfig is the chain parameters to run a node on the test Auxilium network.
 	AuxiliumTestnetChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(88),
+		ChainID:             big.NewInt(88),
 		HomesteadBlock:      big.NewInt(1),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,
@@ -50,7 +50,7 @@ var (
 
 	// AuxiliumMainnetChainConfig contains the chain parameters to run a node on the main Auxilium network.
 	AuxiliumMainnetChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(8),
+		ChainID:             big.NewInt(8),
 		HomesteadBlock:      big.NewInt(1),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,

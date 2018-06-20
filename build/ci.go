@@ -65,20 +65,20 @@ var (
 	// Files that end up in the geth*.zip archive.
 	gethArchiveFiles = []string{
 		"COPYING",
-		executablePath("geth"),
+		executablePath("geth", ""),
 	}
 
 	// Files that end up in the geth-alltools*.zip archive.
 	allToolsArchiveFiles = []string{
 		"COPYING",
-		executablePath("abigen"),
-		executablePath("bootnode"),
-		executablePath("evm"),
-		executablePath("geth"),
-		executablePath("puppeth"),
-		executablePath("rlpdump"),
-		executablePath("swarm"),
-		executablePath("wnode"),
+		executablePath("abigen", ""),
+		executablePath("bootnode", ""),
+		executablePath("evm", ""),
+		executablePath("geth", ""),
+		executablePath("puppeth", ""),
+		executablePath("rlpdump", ""),
+		executablePath("swarm", ""),
+		executablePath("wnode", ""),
 	}
 
 	// A debian package is created for all executables listed here.
@@ -127,8 +127,9 @@ var (
 
 var GOBIN, _ = filepath.Abs(filepath.Join("build", "bin"))
 
-func executablePath(name string) string {
-	if runtime.GOOS == "windows" {
+func executablePath(name, arch string) string {
+	name += "-" + arch
+	if strings.Contains(arch, "windows") {
 		name += ".exe"
 	}
 	return filepath.Join(GOBIN, name)
@@ -231,7 +232,7 @@ func doInstall(cmdline []string) {
 				if name == "main" {
 					gobuild := goToolArch(*arch, *cc, "build", buildFlags(env)...)
 					gobuild.Args = append(gobuild.Args, "-v")
-					gobuild.Args = append(gobuild.Args, []string{"-o", executablePath(cmd.Name())}...)
+					gobuild.Args = append(gobuild.Args, []string{"-o", executablePath(cmd.Name(), "")}...)
 					gobuild.Args = append(gobuild.Args, "."+string(filepath.Separator)+filepath.Join("cmd", cmd.Name()))
 					build.MustRun(gobuild)
 					break
@@ -375,12 +376,18 @@ func doArchive(cmdline []string) {
 		alltools = "geth-alltools-" + base + ext
 	)
 	maybeSkipArchive(env)
+
+	gethArchiveFiles := []string{
+		"COPYING",
+		executablePath("geth", *arch),
+	}
+
 	if err := build.WriteArchive(geth, gethArchiveFiles); err != nil {
 		log.Fatal(err)
 	}
-	if err := build.WriteArchive(alltools, allToolsArchiveFiles); err != nil {
-		log.Fatal(err)
-	}
+	// if err := build.WriteArchive(alltools, allToolsArchiveFiles); err != nil {
+	// 	log.Fatal(err)
+	// }
 	for _, archive := range []string{geth, alltools} {
 		if err := archiveUpload(archive, *upload, *signer); err != nil {
 			log.Fatal(err)
