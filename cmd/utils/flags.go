@@ -51,8 +51,8 @@ import (
 	"github.com/ethereum/go-ethereum/metrics/influxdb"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/discover"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/nat"
 	"github.com/ethereum/go-ethereum/p2p/netutil"
 	"github.com/ethereum/go-ethereum/params"
@@ -140,6 +140,10 @@ var (
 		Name:  "rinkeby",
 		Usage: "Rinkeby network: pre-configured proof-of-authority test network",
 	}
+	ConstantinopleOverrideFlag = cli.Uint64Flag{
+		Name:  "override.constantinople",
+		Usage: "Manually specify constantinople fork-block, overriding the bundled setting",
+	}
 	DeveloperFlag = cli.BoolFlag{
 		Name:  "dev",
 		Usage: "Ephemeral proof-of-authority network with a pre-funded developer account, mining enabled",
@@ -181,6 +185,10 @@ var (
 	LightKDFFlag = cli.BoolFlag{
 		Name:  "lightkdf",
 		Usage: "Reduce key-derivation RAM & CPU usage at some expense of KDF strength",
+	}
+	WhitelistFlag = cli.StringFlag{
+		Name:  "whitelist",
+		Usage: "Comma separated block number-to-hash mappings to enforce (<number>=<hash>)",
 	}
 	// Dashboard settings
 	DashboardEnabledFlag = cli.BoolFlag{
@@ -295,7 +303,12 @@ var (
 	CacheDatabaseFlag = cli.IntFlag{
 		Name:  "cache.database",
 		Usage: "Percentage of cache memory allowance to use for database io",
-		Value: 75,
+		Value: 50,
+	}
+	CacheTrieFlag = cli.IntFlag{
+		Name:  "cache.trie",
+		Usage: "Percentage of cache memory allowance to use for trie caching",
+		Value: 25,
 	}
 	CacheGCFlag = cli.IntFlag{
 		Name:  "cache.gc",
@@ -329,21 +342,26 @@ var (
 	MinerGasTargetFlag = cli.Uint64Flag{
 		Name:  "miner.gastarget",
 		Usage: "Target gas floor for mined blocks",
-		Value: params.GenesisGasLimit,
+		Value: eth.DefaultConfig.MinerGasFloor,
 	}
 	MinerLegacyGasTargetFlag = cli.Uint64Flag{
 		Name:  "targetgaslimit",
 		Usage: "Target gas floor for mined blocks (deprecated, use --miner.gastarget)",
-		Value: params.GenesisGasLimit,
+		Value: eth.DefaultConfig.MinerGasFloor,
+	}
+	MinerGasLimitFlag = cli.Uint64Flag{
+		Name:  "miner.gaslimit",
+		Usage: "Target gas ceiling for mined blocks",
+		Value: eth.DefaultConfig.MinerGasCeil,
 	}
 	MinerGasPriceFlag = BigFlag{
 		Name:  "miner.gasprice",
-		Usage: "Minimal gas price for mining a transactions",
+		Usage: "Minimum gas price for mining a transaction",
 		Value: eth.DefaultConfig.MinerGasPrice,
 	}
 	MinerLegacyGasPriceFlag = BigFlag{
 		Name:  "gasprice",
-		Usage: "Minimal gas price for mining a transactions (deprecated, use --miner.gasprice)",
+		Usage: "Minimum gas price for mining a transaction (deprecated, use --miner.gasprice)",
 		Value: eth.DefaultConfig.MinerGasPrice,
 	}
 	MinerEtherbaseFlag = cli.StringFlag{
@@ -366,8 +384,12 @@ var (
 	}
 	MinerRecommitIntervalFlag = cli.DurationFlag{
 		Name:  "miner.recommit",
-		Usage: "Time interval to recreate the block being mined.",
+		Usage: "Time interval to recreate the block being mined",
 		Value: eth.DefaultConfig.MinerRecommit,
+	}
+	MinerNoVerfiyFlag = cli.BoolFlag{
+		Name:  "miner.noverify",
+		Usage: "Disable remote sealing verification",
 	}
 	// Account settings
 	UnlockedAccountFlag = cli.StringFlag{
@@ -558,6 +580,10 @@ var (
 		Usage: "Minimum POW accepted",
 		Value: whisper.DefaultMinimumPoW,
 	}
+	WhisperRestrictConnectionBetweenLightClientsFlag = cli.BoolFlag{
+		Name:  "shh.restrict-light",
+		Usage: "Restrict connection between two whisper light clients",
+	}
 
 	// Metrics flags
 	MetricsEnabledFlag = cli.BoolFlag{
@@ -596,6 +622,17 @@ var (
 		Name:  "metrics.influxdb.host.tag",
 		Usage: "InfluxDB `host` tag attached to all measurements",
 		Value: "localhost",
+	}
+
+	EWASMInterpreterFlag = cli.StringFlag{
+		Name:  "vm.ewasm",
+		Usage: "External ewasm configuration (default = built-in interpreter)",
+		Value: "",
+	}
+	EVMInterpreterFlag = cli.StringFlag{
+		Name:  "vm.evm",
+		Usage: "External EVM configuration (default = built-in interpreter)",
+		Value: "",
 	}
 )
 
@@ -663,9 +700,9 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		return // already set, don't apply defaults.
 	}
 
-	cfg.BootstrapNodes = make([]*discover.Node, 0, len(urls))
+	cfg.BootstrapNodes = make([]*enode.Node, 0, len(urls))
 	for _, url := range urls {
-		node, err := discover.ParseNode(url)
+		node, err := enode.ParseV4(url)
 		if err != nil {
 			log.Crit("Bootstrap URL invalid", "enode", url, "err", err)
 		}
@@ -788,17 +825,12 @@ func setIPC(ctx *cli.Context, cfg *node.Config) {
 // makeDatabaseHandles raises out the number of allowed file handles per process
 // for Geth and returns half of the allowance to assign to the database.
 func makeDatabaseHandles() int {
-	limit, err := fdlimit.Current()
+	limit, err := fdlimit.Maximum()
 	if err != nil {
 		Fatalf("Failed to retrieve file descriptor allowance: %v", err)
 	}
-	if limit < 2048 {
-		if err := fdlimit.Raise(2048); err != nil {
-			Fatalf("Failed to raise file descriptor allowance: %v", err)
-		}
-	}
-	if limit > 2048 { // cap database file descriptors even if more is available
-		limit = 2048
+	if err := fdlimit.Raise(uint64(limit)); err != nil {
+		Fatalf("Failed to raise file descriptor allowance: %v", err)
 	}
 	return limit / 2 // Leave half for networking and other stuff
 }
@@ -942,14 +974,7 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	setWS(ctx, cfg)
 	setNodeUserIdent(ctx, cfg)
 
-	switch {
-	case ctx.GlobalIsSet(DataDirFlag.Name):
-		cfg.DataDir = ctx.GlobalString(DataDirFlag.Name)
-	case ctx.GlobalBool(DeveloperFlag.Name):
-		cfg.DataDir = "" // unless explicitly requested, use memory databases
-	case ctx.GlobalBool(TestnetFlag.Name):
-		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "testnet")
-	}
+	setDataDir(ctx, cfg)
 
 	if ctx.GlobalIsSet(KeyStoreDirFlag.Name) {
 		cfg.KeyStoreDir = ctx.GlobalString(KeyStoreDirFlag.Name)
@@ -959,6 +984,17 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	}
 	if ctx.GlobalIsSet(NoUSBFlag.Name) {
 		cfg.NoUSB = ctx.GlobalBool(NoUSBFlag.Name)
+	}
+}
+
+func setDataDir(ctx *cli.Context, cfg *node.Config) {
+	switch {
+	case ctx.GlobalIsSet(DataDirFlag.Name):
+		cfg.DataDir = ctx.GlobalString(DataDirFlag.Name)
+	case ctx.GlobalBool(DeveloperFlag.Name):
+		cfg.DataDir = "" // unless explicitly requested, use memory databases
+	case ctx.GlobalBool(TestnetFlag.Name):
+		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "testnet")
 	}
 }
 
@@ -1035,6 +1071,29 @@ func setEthash(ctx *cli.Context, cfg *eth.Config) {
 	}
 }
 
+func setWhitelist(ctx *cli.Context, cfg *eth.Config) {
+	whitelist := ctx.GlobalString(WhitelistFlag.Name)
+	if whitelist == "" {
+		return
+	}
+	cfg.Whitelist = make(map[uint64]common.Hash)
+	for _, entry := range strings.Split(whitelist, ",") {
+		parts := strings.Split(entry, "=")
+		if len(parts) != 2 {
+			Fatalf("Invalid whitelist entry: %s", entry)
+		}
+		number, err := strconv.ParseUint(parts[0], 0, 64)
+		if err != nil {
+			Fatalf("Invalid whitelist block number %s: %v", parts[0], err)
+		}
+		var hash common.Hash
+		if err = hash.UnmarshalText([]byte(parts[1])); err != nil {
+			Fatalf("Invalid whitelist hash %s: %v", parts[1], err)
+		}
+		cfg.Whitelist[number] = hash
+	}
+}
+
 // checkExclusive verifies that only a single instance of the provided flags was
 // set by the user. Each flag might optionally be followed by a string type to
 // specialize it further.
@@ -1052,11 +1111,14 @@ func checkExclusive(ctx *cli.Context, args ...interface{}) {
 		if i+1 < len(args) {
 			switch option := args[i+1].(type) {
 			case string:
-				// Extended flag, expand the name and shift the arguments
+				// Extended flag check, make sure value set doesn't conflict with passed in option
 				if ctx.GlobalString(flag.GetName()) == option {
 					name += "=" + option
+					set = append(set, "--"+name)
 				}
+				// shift arguments and continue
 				i++
+				continue
 
 			case cli.Flag:
 			default:
@@ -1081,6 +1143,9 @@ func SetShhConfig(ctx *cli.Context, stack *node.Node, cfg *whisper.Config) {
 	if ctx.GlobalIsSet(WhisperMinPOWFlag.Name) {
 		cfg.MinimumAcceptedPOW = ctx.GlobalFloat64(WhisperMinPOWFlag.Name)
 	}
+	if ctx.GlobalIsSet(WhisperRestrictConnectionBetweenLightClientsFlag.Name) {
+		cfg.RestrictConnectionBetweenLightClients = true
+	}
 }
 
 // SetEthConfig applies eth-related command line flags to the config.
@@ -1094,6 +1159,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	setGPO(ctx, &cfg.GPO)
 	setTxPool(ctx, &cfg.TxPool)
 	setEthash(ctx, cfg)
+	setWhitelist(ctx, cfg)
 
 	if ctx.GlobalIsSet(SyncModeFlag.Name) {
 		cfg.SyncMode = *GlobalTextMarshaler(ctx, SyncModeFlag.Name).(*downloader.SyncMode)
@@ -1107,7 +1173,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	if ctx.GlobalIsSet(NetworkIdFlag.Name) {
 		cfg.NetworkId = ctx.GlobalUint64(NetworkIdFlag.Name)
 	}
-
 	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheDatabaseFlag.Name) {
 		cfg.DatabaseCache = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheDatabaseFlag.Name) / 100
 	}
@@ -1118,14 +1183,11 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	}
 	cfg.NoPruning = ctx.GlobalString(GCModeFlag.Name) == "archive"
 
+	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheTrieFlag.Name) {
+		cfg.TrieCleanCache = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheTrieFlag.Name) / 100
+	}
 	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheGCFlag.Name) {
-		cfg.TrieCache = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheGCFlag.Name) / 100
-	}
-	if ctx.GlobalIsSet(MinerLegacyThreadsFlag.Name) {
-		cfg.MinerThreads = ctx.GlobalInt(MinerLegacyThreadsFlag.Name)
-	}
-	if ctx.GlobalIsSet(MinerThreadsFlag.Name) {
-		cfg.MinerThreads = ctx.GlobalInt(MinerThreadsFlag.Name)
+		cfg.TrieDirtyCache = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheGCFlag.Name) / 100
 	}
 	if ctx.GlobalIsSet(MinerNotifyFlag.Name) {
 		cfg.MinerNotify = strings.Split(ctx.GlobalString(MinerNotifyFlag.Name), ",")
@@ -1139,6 +1201,15 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	if ctx.GlobalIsSet(MinerExtraDataFlag.Name) {
 		cfg.MinerExtraData = []byte(ctx.GlobalString(MinerExtraDataFlag.Name))
 	}
+	if ctx.GlobalIsSet(MinerLegacyGasTargetFlag.Name) {
+		cfg.MinerGasFloor = ctx.GlobalUint64(MinerLegacyGasTargetFlag.Name)
+	}
+	if ctx.GlobalIsSet(MinerGasTargetFlag.Name) {
+		cfg.MinerGasFloor = ctx.GlobalUint64(MinerGasTargetFlag.Name)
+	}
+	if ctx.GlobalIsSet(MinerGasLimitFlag.Name) {
+		cfg.MinerGasCeil = ctx.GlobalUint64(MinerGasLimitFlag.Name)
+	}
 	if ctx.GlobalIsSet(MinerLegacyGasPriceFlag.Name) {
 		cfg.MinerGasPrice = GlobalBig(ctx, MinerLegacyGasPriceFlag.Name)
 	}
@@ -1148,9 +1219,20 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	if ctx.GlobalIsSet(MinerRecommitIntervalFlag.Name) {
 		cfg.MinerRecommit = ctx.Duration(MinerRecommitIntervalFlag.Name)
 	}
+	if ctx.GlobalIsSet(MinerNoVerfiyFlag.Name) {
+		cfg.MinerNoverify = ctx.Bool(MinerNoVerfiyFlag.Name)
+	}
 	if ctx.GlobalIsSet(VMEnableDebugFlag.Name) {
 		// TODO(fjl): force-enable this in --dev mode
 		cfg.EnablePreimageRecording = ctx.GlobalBool(VMEnableDebugFlag.Name)
+	}
+
+	if ctx.GlobalIsSet(EWASMInterpreterFlag.Name) {
+		cfg.EWASMInterpreter = ctx.GlobalString(EWASMInterpreterFlag.Name)
+	}
+
+	if ctx.GlobalIsSet(EVMInterpreterFlag.Name) {
+		cfg.EVMInterpreter = ctx.GlobalString(EVMInterpreterFlag.Name)
 	}
 
 	// Override any default configs for hard coded networks.
@@ -1255,15 +1337,6 @@ func RegisterEthStatsService(stack *node.Node, url string) {
 	}
 }
 
-// SetupNetwork configures the system for either the main net or some test network.
-func SetupNetwork(ctx *cli.Context) {
-	// TODO(fjl): move target gas limit into config
-	params.TargetGasLimit = ctx.GlobalUint64(MinerLegacyGasTargetFlag.Name)
-	if ctx.GlobalIsSet(MinerGasTargetFlag.Name) {
-		params.TargetGasLimit = ctx.GlobalUint64(MinerGasTargetFlag.Name)
-	}
-}
-
 func SetupMetrics(ctx *cli.Context) {
 	if metrics.Enabled {
 		log.Info("Enabling metrics collection")
@@ -1317,7 +1390,6 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chainDb ethdb.Database) {
 	var err error
 	chainDb = MakeChainDatabase(ctx, stack)
-
 	config, _, err := core.SetupGenesisBlock(chainDb, MakeGenesis(ctx))
 	if err != nil {
 		Fatalf("%v", err)
@@ -1335,22 +1407,26 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 				DatasetDir:     stack.ResolvePath(eth.DefaultConfig.Ethash.DatasetDir),
 				DatasetsInMem:  eth.DefaultConfig.Ethash.DatasetsInMem,
 				DatasetsOnDisk: eth.DefaultConfig.Ethash.DatasetsOnDisk,
-			}, nil)
+			}, nil, false)
 		}
 	}
 	if gcmode := ctx.GlobalString(GCModeFlag.Name); gcmode != "full" && gcmode != "archive" {
 		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
 	}
 	cache := &core.CacheConfig{
-		Disabled:      ctx.GlobalString(GCModeFlag.Name) == "archive",
-		TrieNodeLimit: eth.DefaultConfig.TrieCache,
-		TrieTimeLimit: eth.DefaultConfig.TrieTimeout,
+		Disabled:       ctx.GlobalString(GCModeFlag.Name) == "archive",
+		TrieCleanLimit: eth.DefaultConfig.TrieCleanCache,
+		TrieDirtyLimit: eth.DefaultConfig.TrieDirtyCache,
+		TrieTimeLimit:  eth.DefaultConfig.TrieTimeout,
+	}
+	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheTrieFlag.Name) {
+		cache.TrieCleanLimit = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheTrieFlag.Name) / 100
 	}
 	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheGCFlag.Name) {
-		cache.TrieNodeLimit = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheGCFlag.Name) / 100
+		cache.TrieDirtyLimit = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheGCFlag.Name) / 100
 	}
 	vmcfg := vm.Config{EnablePreimageRecording: ctx.GlobalBool(VMEnableDebugFlag.Name)}
-	chain, err = core.NewBlockChain(chainDb, cache, config, engine, vmcfg)
+	chain, err = core.NewBlockChain(chainDb, cache, config, engine, vmcfg, nil)
 	if err != nil {
 		Fatalf("Can't create BlockChain: %v", err)
 	}
