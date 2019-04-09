@@ -42,7 +42,7 @@ var (
 		EIP158Block:         big.NewInt(3),
 		ByzantiumBlock:      big.NewInt(4),
 		ConstantinopleBlock: big.NewInt(3660663),
-		PetersburgBlock:     big.NewInt(9999999),
+		PetersburgBlock:     big.NewInt(4321234),
 		Clique: &CliqueConfig{
 			Period: 10,
 			Epoch:  30000,
@@ -61,7 +61,7 @@ var (
 		EIP158Block:         big.NewInt(3),
 		ByzantiumBlock:      big.NewInt(4),
 		ConstantinopleBlock: big.NewInt(3660663),
-		PetersburgBlock:     big.NewInt(9999999),
+		PetersburgBlock:     big.NewInt(4321234),
 		Clique: &CliqueConfig{
 			Period: 10,
 			Epoch:  30000,
@@ -80,7 +80,25 @@ var (
 		EIP158Block:         big.NewInt(3),
 		ByzantiumBlock:      big.NewInt(1035301),
 		ConstantinopleBlock: big.NewInt(3660663),
-		PetersburgBlock:     big.NewInt(9999999), //TODO! Insert Rinkeby block number
+		PetersburgBlock:     big.NewInt(4321234),
+		Clique: &CliqueConfig{
+			Period: 15,
+			Epoch:  30000,
+		},
+	}
+
+	// GoerliChainConfig contains the chain parameters to run a node on the Görli test network.
+	GoerliChainConfig = &ChainConfig{
+		ChainID:             big.NewInt(5),
+		HomesteadBlock:      big.NewInt(0),
+		DAOForkBlock:        nil,
+		DAOForkSupport:      true,
+		EIP150Block:         big.NewInt(0),
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		PetersburgBlock:     big.NewInt(0),
 		Clique: &CliqueConfig{
 			Period: 15,
 			Epoch:  30000,
