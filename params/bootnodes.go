@@ -25,8 +25,9 @@ var AuxiliumTestnetBootnodes = []string{
 // AuxiliumTestnetBootnodes are the enode URLs of the P2P bootstrap nodes running on the
 // Auxilium test network.
 var AuxiliumMainnetBootnodes = []string{
-	"enode://d47d0f9bd08495d5dbb93d8f431027d662c4173c8bb64398299f0e990724fd6a1350090fb19e55e86f921ce4f01943b84a70dd9b8579d354621c6f4691da9b57@138.68.176.12:30308",
-	"enode://b20907893af614595ed72144ac2adb8933e4e6136cdececf36b969df4de991566d4e7c7b6d489c1dd573fc669028d0aafd7a9d9ad33d1031e8f5ee2f32b6ba97@8.12.22.12:30308",
+	"enode://f3fd9556371841c44e496ec0b25a586f788a26bafc368eb6ab0a2aa34dc3013c30f7d1270ef4c136f5152374560654867f58074466c808bf782b82c3704d4061@149.28.45.212:30308",
+	"enode://72a4c51e9c0c7f238a1d9ec00d97f82d8c7c6227d0dd2ac553ebd167e75c41cfa9dc0d3ee4a3dc8f03ea9450d3c699da9bdf0e91e24c5dd40eea505f49e86c87@138.68.176.12:30308",
+	"enode://c03c389ec55517a3c49400a89706a744eedb4c3bab09ffedfd305bdbc9a3ffdd9febe75746fe88dbce06a55d02564af54d429c772543a1c720c03518ab2b86c8@8.12.18.68:30308",
 }
 
 // DiscoveryV5Bootnodes are the enode URLs of the P2P bootstrap nodes for the

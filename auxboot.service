@@ -1,0 +1,12 @@
+[Unit]
+Description=Auxilium bootnode
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c '/opt/aux/bootnode --nodekey /opt/aux/boot2.key -addr 8.12.22.12:30308 > /home/olhaye52/bootnode.log 2>&1'
+User=olhaye52
+
+[Install]
+WantedBy=default.target
+
+
