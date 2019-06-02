@@ -32,6 +32,8 @@ var (
 var (
 	// AuxiliuTestnetChainConfig is the chain parameters to run a node on the test Auxilium network.
 	AuxiliumTestnetChainConfig = &ChainConfig{
+		OldChainID:          big.NewInt(1),
+		ChainForkBlock:      big.NewInt(100),
 		ChainID:             big.NewInt(88),
 		HomesteadBlock:      big.NewInt(1),
 		DAOForkBlock:        nil,
@@ -51,7 +53,9 @@ var (
 
 	// AuxiliumMainnetChainConfig contains the chain parameters to run a node on the main Auxilium network.
 	AuxiliumMainnetChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(8),
+		OldChainID:          big.NewInt(8),
+		ChainForkBlock:      big.NewInt(2783760),
+		ChainID:             big.NewInt(28945486),
 		HomesteadBlock:      big.NewInt(1),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      false,
@@ -70,6 +74,8 @@ var (
 
 	// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
 	RinkebyChainConfig = &ChainConfig{
+		OldChainID:          big.NewInt(0),
+		ChainForkBlock:      big.NewInt(0),
 		ChainID:             big.NewInt(4),
 		HomesteadBlock:      big.NewInt(1),
 		DAOForkBlock:        nil,
@@ -89,6 +95,8 @@ var (
 
 	// GoerliChainConfig contains the chain parameters to run a node on the Görli test network.
 	GoerliChainConfig = &ChainConfig{
+		OldChainID:          big.NewInt(0),
+		ChainForkBlock:      big.NewInt(0),
 		ChainID:             big.NewInt(5),
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        nil,
@@ -110,16 +118,16 @@ var (
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
+	AllEthashProtocolChanges = &ChainConfig{big.NewInt(0), big.NewInt(0), big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
 
 	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the Clique consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}}
+	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(0), big.NewInt(0), big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
+	TestChainConfig = &ChainConfig{big.NewInt(0), big.NewInt(0), big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
 )
 
@@ -141,7 +149,9 @@ type TrustedCheckpoint struct {
 // that any network, identified by its genesis block, can have its own
 // set of configuration options.
 type ChainConfig struct {
-	ChainID *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
+	OldChainID     *big.Int `json:"oldChainId"`
+	ChainForkBlock *big.Int `json:"chainForkBlock"`
+	ChainID        *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
 
 	HomesteadBlock *big.Int `json:"homesteadBlock,omitempty"` // Homestead switch block (nil = no fork, 0 = already homestead)
 
@@ -258,6 +268,13 @@ func (c *ChainConfig) IsPetersburg(num *big.Int) bool {
 // IsEWASM returns whether num represents a block number after the EWASM fork
 func (c *ChainConfig) IsEWASM(num *big.Int) bool {
 	return isForked(c.EWASMBlock, num)
+}
+
+func (c *ChainConfig) GetChainID(head *big.Int) *big.Int {
+	if head == nil || c.ChainForkBlock.Cmp(head) >= 0 {
+		return c.OldChainID
+	}
+	return c.ChainID
 }
 
 // GasTable returns the gas table corresponding to the current phase (homestead or homestead reprice).
