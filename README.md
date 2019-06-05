@@ -17,9 +17,21 @@ For more details on Auxilium and Auxilium Global, visit https://auxilium.global.
 
 ## Build and run the node
 
-Install Go (version 1.7 or later) and a C compiler. Then run:
+Install Go (version 1.7 or later) and a C compiler. Then move to directory with this repository and run:
 
     make geth
+
+To start the node use the following command:
+
+    $ ./build/bin/geth --syncmode full
+
+Upon first start node will begin synchronizing from block 1. Due to ChainID fork, initial synchonization with Auxilium network requires some additional steps: once block 2783760 has been downloaded, node should be restarted with the same command
+
+    $ ./build/bin/geth --syncmode full
+
+After that, the node can be used as usual. Number of the last downloaded block can be seen in the logs of `geth` command, via commands passed to `geth --syncmode full console` or with the help of local HTTP-RPC server.
+
+All subsequent starts of Auxilium `geth` do not require any additional restarts but work out of the box.
 
 Please refer to `geth.README.md` for detailed instructions, as well as for description of command line options.
 
@@ -31,13 +43,9 @@ Here path to Auxilium node code can be arbitrary.
 
 ## Auxilium's modifications of the node
 
-Auxilium's node was modified in order to connect only to Auxilium blockchain network configured with PoA Clique consensus, with chain ID equal to 8. To connect to Auxilium main network, it's enough to run:
+Auxilium's node was modified in order to connect only to Auxilium blockchain network configured with PoA Clique consensus, with different Chain ID. Initially Auxilium used Chain ID 8. However, to avoid collisions with other Ethereum-based networks, Auxilium network underwent ChainID fork that took place on June 1st, 2019, block 2783760. Now Auxilium network has Chain ID 28945486.
 
-```
-$ geth console
-```
-
-The syncmode option and console command operate identically to those in original geth; however, Auxilium's node uses port 30308 by default. Likewise, default data directory for Auxilium's node is `~/.auxilium` on Linux and its analogues on Windows and OS X.
+The `syncmode` option and `console` command operate identically to those in original `geth`; however, Auxilium's node uses port 30308 by default. Likewise, default data directory for Auxilium's node is `~/.auxilium` on Linux and its analogues on Windows and OS X.
 
 ## License
 
